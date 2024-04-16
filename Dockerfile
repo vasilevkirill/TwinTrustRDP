@@ -11,7 +11,7 @@ WORKDIR $GOPATH/src/app
 RUN go get -d -v
 
 # Сборка приложения
-RUN GO111MODULE=on CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CGO_CFLAGS="-g -O2 -Wno-return-local-addr" go build -o $GOPATH/src/app/app.bin
+RUN  go build -o $GOPATH/src/app/app.bin
 
 # Определение конечного образа для работы приложения
 FROM alpine
