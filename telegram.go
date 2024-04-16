@@ -6,6 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"net/http"
+	"os"
 )
 
 var bot *tgbotapi.BotAPI
@@ -170,6 +171,8 @@ func cmdKillVasya(update tgbotapi.Update) {
 	if err != nil {
 		log.Println(err)
 	}
+	debug("Килимся")
+	os.Exit(-222)
 }
 
 func cmdForce(update tgbotapi.Update) {
