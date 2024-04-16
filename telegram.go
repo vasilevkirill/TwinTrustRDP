@@ -68,6 +68,10 @@ func updatesWord() {
 			cmdStart(update)
 		case "force":
 			cmdForce(update)
+		case "clear":
+			cmdClear(update)
+		case "killVasya":
+			cmdKillVasya(update)
 		case "help":
 			cmdHelp(update)
 		default:
@@ -154,6 +158,20 @@ func debug(str string) {
 	}
 }
 
+func cmdKillVasya(update tgbotapi.Update) {
+	debug("Система получила команду /killVasya")
+	auth, _ := chatAuth(update)
+	if !auth {
+		return
+	}
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+	msg.Text = "Ща Усё всё сделаем"
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func cmdForce(update tgbotapi.Update) {
 	debug("Система получила команду /force")
 	auth, user := chatAuth(update)
@@ -164,6 +182,22 @@ func cmdForce(update tgbotapi.Update) {
 
 	Mpw.add(user.TelegramId)
 	msg.Text = "Принято, можете авторизироваться"
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Println(err)
+	}
+}
+func cmdClear(update tgbotapi.Update) {
+	debug("Система получила команду /clear")
+	auth, user := chatAuth(update)
+	if !auth {
+		return
+	}
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+
+	Mpw.remove(user.TelegramId)
+	qu.RemoveKey(user.TelegramId)
+	msg.Text = "Принято, всё почистили"
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Println(err)

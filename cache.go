@@ -15,7 +15,7 @@ import (
 var Mpw = MapCache{}                  // Глобальная переменная для хранения кэша
 var CacheFile = "./config/cache.json" // Путь к файлу кэша
 
-// Структура MapCache для хранения кэша
+// MapCache Структура MapCache для хранения кэша
 type MapCache struct {
 	Map map[int64]time.Time // Карта для хранения времени создания записей в кэше
 	Rw  sync.RWMutex        // Mutex для безопасного доступа к карте
@@ -73,6 +73,12 @@ func initCache() error {
 	}
 
 	return nil
+}
+
+func (w *MapCache) remove(TelegramId int64) {
+	w.Rw.Lock()
+	defer w.Rw.Unlock()
+	delete(w.Map, TelegramId)
 }
 
 // Функция check проверяет наличие записи в кэше по TelegramId
