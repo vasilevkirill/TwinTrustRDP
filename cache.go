@@ -77,8 +77,11 @@ func initCache() error {
 
 func (w *MapCache) remove(TelegramId int64) {
 	w.Rw.Lock()
-	defer w.Rw.Unlock()
 	delete(w.Map, TelegramId)
+	w.Rw.Unlock()
+	// Сохранение кэша в файл
+	w.save()
+	return
 }
 
 // Функция check проверяет наличие записи в кэше по TelegramId
@@ -141,4 +144,29 @@ func (w *MapCache) save() {
 		return
 	}
 	return
+}
+
+// cleanOldEntries функция очистки старых записей из кэша
+func cleanOldEntries() {
+	// Блокировка для записи
+	Mpw.Rw.Lock()
+
+	// Получение текущего времени
+	currentTime := time.Now()
+
+	// Перебор записей в кэше
+	for id, timestamp := range Mpw.Map {
+		// Вычисление разницы времени между текущим временем и временем создания записи
+		diff := currentTime.Sub(timestamp)
+		seconds := int(diff.Seconds())
+
+		// Проверка, истекло ли время жизни записи в кэше
+		if seconds >= configGlobalS.Cache.Timeout {
+			// Удаление записи из кэша
+			delete(Mpw.Map, id)
+		}
+	}
+	Mpw.Rw.Unlock()
+	// Сохранение кэша в файл
+	Mpw.save()
 }
