@@ -27,6 +27,8 @@ jobs:
       - name: Merge with production
         if: success()
         run: |
+          git config --global user.email "git@vasilevkirill.ru"
+          git config --global user.name "github action"
           git fetch 
           git checkout production
           git merge main --no-ff --no-edit --allow-unrelated-histories
