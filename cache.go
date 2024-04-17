@@ -148,6 +148,7 @@ func (w *MapCache) save() {
 
 // cleanOldEntries функция очистки старых записей из кэша
 func cleanOldEntries() {
+	debug("Чистка кеша")
 	// Блокировка для записи
 	Mpw.Rw.Lock()
 
