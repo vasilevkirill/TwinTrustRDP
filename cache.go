@@ -92,12 +92,14 @@ func (w *MapCache) check(TelegramId int64) bool {
 
 	// Поиск записи в кэше
 	t, ok := w.Map[TelegramId]
+
 	if ok == false {
 		return false
 	}
 	// Получение текущего времени
 	currentTime := time.Now()
 	// Вычисление разницы времени
+
 	diff := t.Sub(currentTime)
 	seconds := int(diff.Seconds())
 	// Проверка времени жизни записи в кэше
