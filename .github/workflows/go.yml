@@ -27,6 +27,7 @@ jobs:
       - name: Merge with production
         if: success()
         run: |
+          git fetch 
           git checkout production
           git merge main --no-ff --no-edit
           git push origin production
