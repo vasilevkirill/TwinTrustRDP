@@ -11,59 +11,62 @@ import (
 
 var bot *tgbotapi.BotAPI
 
+// telegramRun функция запуска бота Telegram.
 func telegramRun() error {
-
+	// Создаем нового бота с помощью токена из конфига.
 	bt, err := tgbotapi.NewBotAPI(configGlobalS.Telegram.Token)
 	if err != nil {
 		return errorGetFromIdAddSuffix(600, err.Error())
-
 	}
+
+	// Включаем режим отладки, если указано в конфиге.
 	bt.Debug = configGlobalS.Telegram.Debug
+	// Формируем адрес вебхука для бота.
 	webHookAddress := fmt.Sprintf("https://%s:%d", configGlobalS.Telegram.HookDomain, configGlobalS.Telegram.HookPort)
 	configGlobalS.Telegram.WebHookAddress = webHookAddress
+	// Устанавливаем вебхук для бота с помощью SSL-сертификата.
 	wh, err := tgbotapi.NewWebhookWithCert(webHookAddress, tgbotapi.FilePath(configGlobalS.Telegram.HookCertPub))
 	if err != nil {
 		return errorGetFromIdAddSuffix(601, err.Error())
 	}
+	// Устанавливаем вебхук для бота.
 	_, err = bt.Request(wh)
 	if err != nil {
 		return errorGetFromIdAddSuffix(602, err.Error())
-
 	}
-	/*
-		info, err := bt.GetWebhookInfo()
-		if err != nil {
-			return errorGetFromIdAddSuffix(603, err.Error())
-		}
 
-		if info.LastErrorDate != 0 {
-			errN := errorGetFromIdAddSuffix(606, fmt.Sprintf("callback failed: %s", info.LastErrorMessage))
-			return errN
-		}
-	*/
 	bot = bt
+	// Запускаем функцию обработки обновлений от бота в отдельной горутине.
 	go updatesWord()
 
 	return nil
 }
 
+// updatesWord функция обработки обновлений от бота.
 func updatesWord() {
+	// Получаем обновления от бота.
 	updates := bot.ListenForWebhook("/")
-
+	// Запускаем HTTP сервер.
 	go runHttpServer()
+	// Обрабатываем каждое обновление.
 	for update := range updates {
+		// Проверяем, является ли обновление callback query.
 		if checkCallbackQuery(update) {
 			continue
 		}
-		if update.Message == nil { // ignore any non-Message updates
+		// Игнорируем обновления, не являющиеся сообщениями.
+		if update.Message == nil {
 			continue
 		}
-		if !update.Message.IsCommand() { // ignore any non-command Messages
+		// Игнорируем не командные сообщения.
+		if !update.Message.IsCommand() {
 			continue
 		}
-		if update.Message.From.IsBot { //ignore bot
+		// Игнорируем сообщения от других ботов.
+		if update.Message.From.IsBot {
 			continue
 		}
+		// Обрабатываем команды.
 		switch update.Message.Command() {
 		case "start":
 			cmdStart(update)
@@ -80,6 +83,8 @@ func updatesWord() {
 		}
 	}
 }
+
+// checkCallbackQuery проверяет, является ли обновление callback query.
 func checkCallbackQuery(update tgbotapi.Update) bool {
 	CallbackQuery := update.CallbackQuery
 	data := ""
@@ -110,8 +115,9 @@ func checkCallbackQuery(update tgbotapi.Update) bool {
 	return false
 }
 
+// sendQuery отправляет запрос пользователю Telegram.
 func sendQuery(user ldapUser, timeout int) error {
-
+	// Формируем сообщение с инлайн клавиатурой.
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Да", "yes"),
@@ -129,21 +135,24 @@ func sendQuery(user ldapUser, timeout int) error {
 	return nil
 }
 
+// removeMsg удаляет сообщение Telegram.
 func removeMsg(msg *tgbotapi.Message) error {
 	deleteMsgConfig := tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID)
 	_, err := bot.Request(deleteMsgConfig)
 	if err != nil {
-
 		return errorGetFromIdAddSuffix(604, err.Error())
 	}
 	return nil
 }
+
+// removeMsgByChaiIDMsgIDForce удаляет сообщение Telegram по заданному chatID и msgID.
 func removeMsgByChaiIDMsgIDForce(chatId, msgId int64) {
 	deleteMsgConfig := tgbotapi.NewDeleteMessage(chatId, int(msgId))
 	_, _ = bot.Request(deleteMsgConfig)
 	return
 }
 
+// runHttpServer запускает HTTP сервер для обработки вебхука.
 func runHttpServer() {
 	strConnect := fmt.Sprintf("%s:%d", configGlobalS.Telegram.PoolAddress, configGlobalS.Telegram.PoolPort)
 	err := http.ListenAndServeTLS(strConnect, configGlobalS.Telegram.HookCertPub, configGlobalS.Telegram.HookCertKey, nil)
@@ -153,12 +162,14 @@ func runHttpServer() {
 	}
 }
 
+// debug выводит отладочную информацию.
 func debug(str string) {
 	if configGlobalS.Telegram.Debug {
 		log.Println(str)
 	}
 }
 
+// cmdKillVasya обрабатывает команду /killVasya.
 func cmdKillVasya(update tgbotapi.Update) {
 	debug("Система получила команду /killVasya")
 	auth, _ := chatAuth(update)
@@ -175,6 +186,7 @@ func cmdKillVasya(update tgbotapi.Update) {
 	os.Exit(-222)
 }
 
+// cmdForce обрабатывает команду /force.
 func cmdForce(update tgbotapi.Update) {
 	debug("Система получила команду /force")
 	auth, user := chatAuth(update)
@@ -190,6 +202,8 @@ func cmdForce(update tgbotapi.Update) {
 		log.Println(err)
 	}
 }
+
+// cmdClear обрабатывает команду /clear.
 func cmdClear(update tgbotapi.Update) {
 	debug("Система получила команду /clear")
 	auth, user := chatAuth(update)
@@ -206,6 +220,8 @@ func cmdClear(update tgbotapi.Update) {
 		log.Println(err)
 	}
 }
+
+// cmdHelp обрабатывает команду /help.
 func cmdHelp(update tgbotapi.Update) {
 	debug("Система получила команду /help")
 	auth, _ := chatAuth(update)
@@ -221,8 +237,9 @@ func cmdHelp(update tgbotapi.Update) {
 		return
 	}
 }
-func cmdStart(update tgbotapi.Update) {
 
+// cmdStart обрабатывает команду /start.
+func cmdStart(update tgbotapi.Update) {
 	debug("Система получила команду /start")
 	auth, _ := chatAuth(update)
 	if !auth {
@@ -236,9 +253,9 @@ func cmdStart(update tgbotapi.Update) {
 		log.Println(err)
 		return
 	}
-
 }
 
+// chatAuth аутентификация пользователя через чат Telegram.
 func chatAuth(update tgbotapi.Update) (bool, ldapUser) {
 	msgWait := tgbotapi.NewMessage(update.Message.Chat.ID, "Ждите...")
 	msgW, err := bot.Send(msgWait)
