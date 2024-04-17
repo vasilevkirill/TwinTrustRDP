@@ -29,7 +29,7 @@ jobs:
         run: |
           git fetch 
           git checkout production
-          git merge main --no-ff --no-edit
+          git merge main --no-ff --no-edit --allow-unrelated-histories
           git push origin production
 
       - name: Set tag and release
