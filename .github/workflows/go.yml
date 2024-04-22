@@ -23,29 +23,3 @@ jobs:
 
       - name: Test
         run: go test -v ./...
-
-      - name: Merge with production
-        if: success()
-        run: |
-          git config --global user.email "git@vasilevkirill.ru"
-          git config --global user.name "github action"
-          git fetch 
-          git checkout production
-          git merge main --no-ff --no-edit --allow-unrelated-histories
-          git push origin production
-
-      - name: Set tag and release
-        if: success()
-        run: |
-          # Получить последний тег
-          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
-          
-          # Разбить версию тега на части
-          IFS='.' read -r -a version_parts <<< "$latest_tag"
-          
-          # Увеличить последний номер тега
-          new_version="${version_parts[0]}.${version_parts[1]}.$((${version_parts[2]} + 1))"
-          
-          # Создать новый тег и сделать релиз
-          git tag "$new_version"
-          git push origin "$new_version"
