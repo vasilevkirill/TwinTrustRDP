@@ -11,11 +11,14 @@ import (
 	"time"
 )
 
+var (
+	certFileKey = "./config/cert.key"
+	certFileCer = "./config/cert.cer"
+)
+
 // Функция generateCertificate генерирует закрытый ключ и сертификат для доменного имени и сохраняет их на диск.
 func generateCertificate() error {
 	// Пути к файлам для сохранения закрытого ключа и сертификата.
-	certFileKey := "./config/cert.key"
-	certFileCer := "./config/cert.cer"
 
 	// Проверка существования файлов и удаление их при необходимости.
 	if fileExist(certFileKey) {

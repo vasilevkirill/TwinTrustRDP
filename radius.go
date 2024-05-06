@@ -92,6 +92,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		return
 	}
 	qu.RemoveKey(user.TelegramId)
+	Mpw.add(user.TelegramId)
 	log.Printf("Radius - Пользователь %s aвторизирован", user.SAMAccountName)
 	sendAccessAccept(w, r)
 }
