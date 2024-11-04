@@ -196,7 +196,7 @@ func cmdForce(update tgbotapi.Update) {
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 
 	Mpw.add(user.TelegramId)
-	msg.Text = "Принято, можете авторизироваться"
+	msg.Text = "Принято, можете авторизоваться"
 	_, err := bot.Send(msg)
 	if err != nil {
 		log.Println(err)
