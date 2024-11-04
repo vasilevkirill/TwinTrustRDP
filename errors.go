@@ -33,8 +33,8 @@ var (
 		803: "Ldap PullViaSAMAccountName strconv.ParseInt:",
 	}
 	ldapErrUserNotFound           = errors.New("пользователь не найден")
-	ldapErrUserFoundMoreThanOne   = errors.New("найденно пользователей больше чем один")
-	ldapErrUserSAMAccountRequired = errors.New("SAMAccount обезателен")
+	ldapErrUserFoundMoreThanOne   = errors.New("найдено пользователей больше чем один")
+	ldapErrUserSAMAccountRequired = errors.New("SAMAccount обязателен")
 )
 
 func errorGetFromId(i int) error {
