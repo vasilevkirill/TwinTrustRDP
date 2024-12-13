@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/robfig/cron/v3"
 	"log"
 	"os"
 	"syscall"
@@ -8,6 +9,9 @@ import (
 )
 
 func main() {
+	c := cron.New()
+	_, _ = c.AddFunc("@hourly", cleanOldEntries)
+	c.Start()
 	go periodicRestart(5 * time.Hour)
 	// Ваша основная логика приложения
 	for {
