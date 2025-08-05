@@ -303,6 +303,9 @@ func chatAuth(update tgbotapi.Update) (bool, ldapUser) {
 }
 
 func checkOldMessage(msg *tgbotapi.Message) error {
+	if msg == nil {
+		return nil
+	}
 	msgTime := time.Unix(int64(msg.Date), 0)
 	if time.Since(msgTime) > 3*time.Minute {
 		err := removeMsg(msg)
