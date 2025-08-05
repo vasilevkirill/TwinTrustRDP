@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var bot *tgbotapi.BotAPI
@@ -50,6 +51,11 @@ func updatesWord() {
 	go runHttpServer()
 	// Обрабатываем каждое обновление.
 	for update := range updates {
+		err := checkOldMessage(update.Message)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 		// Проверяем, является ли обновление callback query.
 		if checkCallbackQuery(update) {
 			continue
@@ -96,6 +102,7 @@ func checkCallbackQuery(update tgbotapi.Update) bool {
 		return false
 	}
 	msg := CallbackQuery.Message
+
 	debug(fmt.Sprintf("Пользователь %d нажал %s", msg.Chat.ID, data))
 	err := removeMsg(msg)
 	if err != nil {
@@ -146,10 +153,13 @@ func removeMsg(msg *tgbotapi.Message) error {
 }
 
 // removeMsgByChaiIDMsgIDForce удаляет сообщение Telegram по заданному chatID и msgID.
-func removeMsgByChaiIDMsgIDForce(chatId, msgId int64) {
+func removeMsgByChaiIDMsgIDForce(chatId, msgId int64) error {
 	deleteMsgConfig := tgbotapi.NewDeleteMessage(chatId, int(msgId))
-	_, _ = bot.Request(deleteMsgConfig)
-	return
+	_, err := bot.Request(deleteMsgConfig)
+	if err != nil {
+		return errorGetFromIdAddSuffix(604, err.Error())
+	}
+	return nil
 }
 
 // runHttpServer запускает HTTP сервер для обработки вебхука.
@@ -290,4 +300,18 @@ func chatAuth(update tgbotapi.Update) (bool, ldapUser) {
 		log.Println(err)
 	}
 	return true, user
+}
+
+func checkOldMessage(msg *tgbotapi.Message) error {
+	msgTime := time.Unix(int64(msg.Date), 0)
+	if time.Since(msgTime) > 3*time.Minute {
+		err := removeMsg(msg)
+		if err != nil {
+			return err
+		}
+		duration := time.Since(msgTime)
+		seconds := int(duration.Seconds())
+		return errorGetFromIdAddSuffix(607, fmt.Sprintf("%d seconds", seconds))
+	}
+	return nil
 }

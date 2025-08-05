@@ -88,7 +88,8 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 		errN := errorGetFromIdAddSuffix(701, err.Error())
 		log.Println(errN)
 		sendAccessReject(w, r)
-		removeMsgByChaiIDMsgIDForce(user.TelegramId, msg.MsgId)
+		errR := removeMsgByChaiIDMsgIDForce(user.TelegramId, msg.MsgId)
+		log.Println(errR)
 		return
 	}
 	qu.RemoveKey(user.TelegramId)

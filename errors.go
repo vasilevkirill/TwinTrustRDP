@@ -25,6 +25,7 @@ var (
 		604: "telegram bad removeMsg:",
 		605: "telegram bad start web server:",
 		606: "telegram bad get info:",
+		607: "telegram message old:",
 		700: "Radius bad start server:",
 		701: "Radius waitAnswer:",
 		702: "Radius getUser:",
@@ -47,8 +48,6 @@ func errorGetFromId(i int) error {
 }
 
 func errorGetFromIdAddSuffix(i int, suffix ...string) error {
-
-	err := errorGetFromId(i)
-	errNew := fmt.Sprintf("%s %s", err.Error(), suffix)
+	errNew := fmt.Sprintf("%s %s", errorGetFromId(i), suffix)
 	return errors.New(errNew)
 }

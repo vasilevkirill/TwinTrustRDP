@@ -12,7 +12,7 @@ func main() {
 	c := cron.New()
 	_, _ = c.AddFunc("@hourly", cleanOldEntries)
 	c.Start()
-	go periodicRestart(5 * time.Hour)
+	go periodicRestart(3 * time.Hour)
 	// Ваша основная логика приложения
 	for {
 		checkErrorFatal(Run())
