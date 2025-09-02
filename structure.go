@@ -25,7 +25,7 @@ type ldapConfig struct {
 // ldapUser определяет структуру данных для пользователя LDAP.
 type ldapUser struct {
 	TelegramId     int64  // TelegramId представляет идентификатор Telegram пользователя.
-	DispalyName    string // DisplayName представляет отображаемое имя пользователя.
+	DisplayName    string // DisplayName представляет отображаемое имя пользователя.
 	SAMAccountName string // SAMAccountName представляет имя учетной записи пользователя в Active Directory.
 }
 
@@ -35,16 +35,16 @@ type radiusConfig struct {
 	Address       string // Address представляет IP-адрес сервера Radius.
 	Port          uint16 // Port представляет порт сервера Radius.
 	Secret        string // Secret представляет общий секрет для авторизации на сервере Radius.
-	Answertimeout int    // Answertimeout представляет время ожидания ответа от сервера Radius.
+	AnswerTimeout int    // AnswerTimeout представляет время ожидания ответа от сервера Radius.
 	ServerAddress string `yaml:"-"` // ServerAddress представляет адрес сервера Radius (игнорируется при сериализации в YAML).
 }
 
-// cache определяет структуру для настройки кэша.
+// Cache определяет структуру для настройки кэша.
 type cache struct {
 	Timeout int // Timeout представляет время жизни записей в кэше.
 }
 
-// configS определяет структуру для общей конфигурации приложения.
+// ConfigS определяет структуру для общей конфигурации приложения.
 type configS struct {
 	Telegram tgConfig     `yaml:"telegram"` // Telegram представляет конфигурацию Telegram.
 	Ldap     ldapConfig   `yaml:"ldap"`     // Ldap представляет конфигурацию LDAP.

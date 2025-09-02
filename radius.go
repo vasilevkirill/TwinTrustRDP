@@ -63,7 +63,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	qu.AddKey(user.TelegramId)
 
 	// Отправка запроса пользователю и ожидание ответа.
-	err = sendQuery(user, configGlobalS.Radius.Answertimeout)
+	err = sendQuery(user, configGlobalS.Radius.AnswerTimeout)
 	if err != nil {
 		log.Println(err)
 		sendAccessReject(w, r)
@@ -72,7 +72,7 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 
 	// Установка таймаута для ожидания ответа.
 	ctx := context.Background()
-	ctx, cancelFunctionContext := context.WithTimeout(ctx, time.Duration(configGlobalS.Radius.Answertimeout)*time.Second)
+	ctx, cancelFunctionContext := context.WithTimeout(ctx, time.Duration(configGlobalS.Radius.AnswerTimeout)*time.Second)
 	defer func() {
 		qu.RemoveKey(user.TelegramId)
 		cancelFunctionContext()

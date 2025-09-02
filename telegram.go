@@ -124,7 +124,7 @@ func checkCallbackQuery(update tgbotapi.Update) bool {
 
 // sendQuery отправляет запрос пользователю Telegram.
 func sendQuery(user ldapUser, timeout int) error {
-	// Формируем сообщение с инлайн клавиатурой.
+	// Формируем сообщение с inline клавиатурой.
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Да", "yes"),
@@ -172,7 +172,7 @@ func runHttpServer() {
 	}
 }
 
-// debug выводит отладочную информацию.
+// Debug выводит отладочную информацию.
 func debug(str string) {
 	if configGlobalS.Telegram.Debug {
 		log.Println(str)

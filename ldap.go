@@ -102,7 +102,7 @@ func searchFilterAttrs(filter string, attr []string) ([]*ldapv3.Entry, error) {
 // PullViaTelegramId Метод PullViaTelegramId получает данные пользователя LDAP по TelegramId
 func (u *ldapUser) PullViaTelegramId() error {
 	if u.TelegramId == 0 {
-		return errors.New("telegramid не указан")
+		return errors.New("telegram id не указан")
 	}
 	filter := fmt.Sprintf("(&(objectClass=organizationalPerson)(objectClass=user)(pager=%d))", u.TelegramId) // Фильтр для запроса
 	attrs := []string{"pager", "displayName", "sAMAccountName"}                                              // Атрибуты для запроса
@@ -116,7 +116,7 @@ func (u *ldapUser) PullViaTelegramId() error {
 	if len(req) > 1 {
 		return ldapErrUserFoundMoreThanOne
 	}
-	u.DispalyName = req[0].GetAttributeValue("displayName")
+	u.DisplayName = req[0].GetAttributeValue("displayName")
 	u.SAMAccountName = req[0].GetAttributeValue("sAMAccountName")
 	return nil
 }
@@ -138,7 +138,7 @@ func (u *ldapUser) PullViaSAMAccountName() error {
 	if len(req) > 1 {
 		return ldapErrUserFoundMoreThanOne
 	}
-	u.DispalyName = req[0].GetAttributeValue("displayName")
+	u.DisplayName = req[0].GetAttributeValue("displayName")
 	pager := req[0].GetAttributeValue("pager")
 	TelegramId, err := strconv.ParseInt(pager, 10, 64)
 	if err != nil {
