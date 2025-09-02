@@ -22,15 +22,15 @@ func telegramRun() error {
 
 	// Включаем режим отладки, если указано в конфиге.
 	bt.Debug = configGlobalS.Telegram.Debug
-	// Формируем адрес вебхука для бота.
+	// Формируем адрес веб хука для бота.
 	webHookAddress := fmt.Sprintf("https://%s:%d", configGlobalS.Telegram.HookDomain, configGlobalS.Telegram.HookPort)
 	configGlobalS.Telegram.WebHookAddress = webHookAddress
-	// Устанавливаем вебхук для бота с помощью SSL-сертификата.
+	// Устанавливаем веб хук для бота с помощью SSL-сертификата.
 	wh, err := tgbotapi.NewWebhookWithCert(webHookAddress, tgbotapi.FilePath(configGlobalS.Telegram.HookCertPub))
 	if err != nil {
 		return errorGetFromIdAddSuffix(601, err.Error())
 	}
-	// Устанавливаем вебхук для бота.
+	// Устанавливаем веб хук для бота.
 	_, err = bt.Request(wh)
 	if err != nil {
 		return errorGetFromIdAddSuffix(602, err.Error())

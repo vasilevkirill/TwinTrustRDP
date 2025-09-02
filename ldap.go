@@ -42,7 +42,7 @@ func ping() {
 func createConn() error {
 	for _, ldapServer := range configGlobalS.Ldap.Servers {
 		log.Printf("Ldap - Попытка установить соединение с сервером ldap: %s", ldapServer)
-		ldapL, err := ldapv3.Dial("tcp", ldapServer) // Подключение к LDAP серверу
+		ldapL, err := ldapv3.DialURL(fmt.Sprintf("ldap://%s", ldapServer)) // Подключение к LDAP серверу
 		if err != nil {
 			log.Printf("Ldap - Ошибка при подключении к серверу ldap: %s", ldapServer)
 			log.Println(err)

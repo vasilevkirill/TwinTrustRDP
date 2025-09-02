@@ -71,7 +71,10 @@ func initCache() error {
 		mp := make(map[int64]time.Time)
 		Mpw.Map = mp
 	}
-
+	if Mpw.Map == nil {
+		mp := make(map[int64]time.Time)
+		Mpw.Map = mp
+	}
 	return nil
 }
 

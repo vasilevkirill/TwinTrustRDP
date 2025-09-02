@@ -1,28 +1,28 @@
 package main
 
 func Run() error {
-	err := loadConfig() // поулчаем конфиг
+	err := loadConfig() // поучаем конфиг
 	if err != nil {
 		return err
 	}
 
 	initQ()
-	err = initCache() // инициалзируем кеш
+	err = initCache() // инициализируем кеш
 	if err != nil {
 		return err
 	}
 
-	err = ldapRun() // инициалзируем ldap
+	err = ldapRun() // инициализируем ldap
 	if err != nil {
 		return err
 	}
 
-	err = telegramRun() // инициалзируем бета телеграм
+	err = telegramRun() // инициализируем бета телеграм
 	if err != nil {
 		return err
 	}
 
-	err = radiusRun() // инициалзируем радиус сервер
+	err = radiusRun() // инициализируем радиус сервер
 	if err != nil {
 		return err
 	}

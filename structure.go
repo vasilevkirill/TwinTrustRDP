@@ -6,7 +6,7 @@ type tgConfig struct {
 	Token          string // Token представляет токен Telegram бота.
 	PoolAddress    string // PoolAddress представляет адрес пула Telegram.
 	PoolPort       uint16 // PoolPort представляет порт пула Telegram.
-	HookDomain     string // HookDomain представляет домен вебхука для Telegram.
+	HookDomain     string // HookDomain представляет домен веб хука для Telegram.
 	HookPort       uint16 // HookPort представляет порт вебхука для Telegram.
 	HookCertPub    string // HookCertPub представляет путь к публичному ключу сертификата для вебхука.
 	HookCertKey    string // HookCertKey представляет путь к закрытому ключу сертификата для вебхука.
