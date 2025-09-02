@@ -1,5 +1,5 @@
 # Определение базового образа для сборки приложения
-FROM golang:1.22.2-alpine3.19 AS builder
+FROM golang:1.23-alpine AS builder
 
 # Копирование исходного кода в рабочую директорию контейнера
 COPY . $GOPATH/src/app
