@@ -6,7 +6,6 @@ func Run() error {
 		return err
 	}
 
-	initQ()
 	err = initCache() // инициализируем кеш
 	if err != nil {
 		return err

@@ -88,16 +88,16 @@ func handler(w radius.ResponseWriter, r *radius.Request) {
 	}()
 
 	// Получение сообщения из очереди и ожидание ответа.
-	msg := qu.GetMsg(user.TelegramId)
+	queueMsg, _ := qu.GetMsg(user.TelegramId)
 	log.Printf("Radius - Ожидание ответа от пользователя %s на подключение", user.SAMAccountName)
-	err = waitAnswer(ctx, msg, user)
+	err = waitAnswer(ctx, queueMsg, user)
 	if err != nil {
 		log.Println(err)
 		qu.RemoveKey(user.TelegramId)
 		errN := errorGetFromIdAddSuffix(701, err.Error())
 		log.Println(errN)
 		sendAccessReject(w, r)
-		errR := removeMsgByChaiIDMsgIDForce(user.TelegramId, msg.MsgId)
+		errR := removeMsgByChaiIDMsgIDForce(user.TelegramId, queueMsg.MsgId)
 		if errR != nil {
 			log.Printf("Radius - Ошибка при удалении сообщения для пользователя %s: %s", user.SAMAccountName, errR)
 		}

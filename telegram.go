@@ -19,7 +19,7 @@ func telegramRun() error {
 	if err != nil {
 		return errorGetFromIdAddSuffix(600, err.Error())
 	}
-	bt.Debug = configGlobalS.Telegram.Debug
+	bt.Debug = true
 	log.Printf("Telegram - Запущен бот в режиме отладки: %v", bt.Debug)
 
 	webHookAddress := fmt.Sprintf("https://%s:%d", configGlobalS.Telegram.HookDomain, configGlobalS.Telegram.HookPort)
@@ -50,15 +50,16 @@ func updatesWord() {
 
 	log.Println("Telegram - Обработка обновлений...")
 	for update := range updates {
+		// Сначала проверяем нажатие кнопок
+		if checkCallbackQuery(update) {
+			continue
+		}
+
 		if update.Message != nil {
 			log.Printf("Telegram - Обновление от пользователя: %d, текст: %s", update.Message.From.ID, update.Message.Text)
 			err := checkOldMessage(update.Message)
 			if err != nil {
 				log.Println(err)
-				continue
-			}
-
-			if checkCallbackQuery(update) {
 				continue
 			}
 
@@ -93,33 +94,50 @@ func updatesWord() {
 
 // checkCallbackQuery проверяет, является ли обновление callback query.
 func checkCallbackQuery(update tgbotapi.Update) bool {
-	CallbackQuery := update.CallbackQuery
-	data := ""
-	if CallbackQuery != nil {
-		data = CallbackQuery.Data
+
+	cb := update.CallbackQuery
+	if cb == nil {
+		return false
 	}
+	log.Printf("Telegram - Пришёл callback: %+v", cb)
+
+	data := cb.Data
 	if data == "" {
 		return false
 	}
-	msg := CallbackQuery.Message
-	log.Printf("Telegram - Пользователь %d нажал кнопку %s", msg.Chat.ID, data)
-	err := removeMsg(msg)
-	if err != nil {
-		log.Println("Ошибки при удалении сообщения:", err)
+
+	// Подтверждаем нажатие кнопки, чтобы Telegram "убрал часики"
+	callback := tgbotapi.NewCallback(cb.ID, "")
+	if _, err := bot.Request(callback); err != nil {
+		log.Println("Telegram - Ошибка при подтверждении callback:", err)
+	}
+
+	msg := cb.Message
+	log.Printf("Telegram - Пользователь %d нажал кнопку '%s'", msg.Chat.ID, data)
+
+	// Удаляем сообщение с кнопками
+	if err := removeMsg(msg); err != nil {
+		log.Println("Telegram - Ошибка при удалении сообщения:", err)
 		return true
 	}
-	m := qu.GetMsg(msg.Chat.ID)
-	if data == "yes" {
+
+	// Обработка выбора
+	m := queueMsg{}
+	if m, ok := qu.GetMsg(msg.Chat.ID); ok {
+		m.Chan <- 1
+	}
+	switch data {
+	case "yes":
 		m.Chan <- 1
 		log.Printf("Telegram - Пользователь %d ответил 'да'", msg.Chat.ID)
-		return true
-	}
-	if data == "no" {
+	case "no":
 		m.Chan <- 0
 		log.Printf("Telegram - Пользователь %d ответил 'нет'", msg.Chat.ID)
-		return true
+	default:
+		log.Printf("Telegram - Неизвестный callback: %s", data)
 	}
-	return false
+
+	return true
 }
 
 // sendQuery отправляет запрос пользователю Telegram.

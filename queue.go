@@ -2,64 +2,68 @@ package main
 
 import "sync"
 
-// Определение структуры очереди
-var qu queue
-
-type queue struct {
-	rw  sync.RWMutex       // RWMutex для безопасного доступа к данным
-	Map map[int64]queueMsg // Карта для хранения сообщений в очереди
+// Глобальная очередь
+var qu = queue{
+	Map: make(map[int64]queueMsg),
 }
 
+// queue — структура очереди
+type queue struct {
+	rw  sync.RWMutex       // RWMutex для безопасного доступа
+	Map map[int64]queueMsg // Карта для хранения сообщений
+}
+
+// queueMsg — элемент очереди
 type queueMsg struct {
-	Chan  chan int // Канал для сообщений
+	Chan  chan int // Канал для передачи сигналов
 	MsgId int64    // Идентификатор сообщения
 }
 
-// AddKey Метод добавления ключа в очередь
+// AddKey — добавляет новый ключ в очередь
 func (q *queue) AddKey(key int64) {
-	q.rw.Lock()               // Блокировка для записи
-	defer q.rw.Unlock()       // Обеспечение разблокировки после завершения операции
-	msg := queueMsg{}         // Создание нового сообщения
-	msg.Chan = make(chan int) // Инициализация канала для сообщений
-	q.Map[key] = msg          // Добавление сообщения в карту
+	q.rw.Lock()
+	defer q.rw.Unlock()
+
+	msg := queueMsg{
+		Chan: make(chan int, 1), // Буферизированный канал
+	}
+	q.Map[key] = msg
 }
 
-// IssetKey Метод проверки наличия ключа в очереди
+// IssetKey — проверяет наличие ключа в очереди
 func (q *queue) IssetKey(key int64) bool {
-	q.rw.Lock()         // Блокировка для чтения
-	defer q.rw.Unlock() // Обеспечение разблокировки после завершения операции
-	_, ok := q.Map[key] // Проверка наличия ключа в карте
-	return ok           // Возврат результата проверки
+	q.rw.RLock()
+	defer q.rw.RUnlock()
+	_, ok := q.Map[key]
+	return ok
 }
 
-// RemoveKey Метод удаления ключа из очереди
+// RemoveKey — удаляет ключ из очереди и закрывает канал
 func (q *queue) RemoveKey(key int64) {
-	q.rw.Lock()         // Блокировка для записи
-	defer q.rw.Unlock() // Обеспечение разблокировки после завершения операции
-	delete(q.Map, key)  // Удаление ключа из карты
-	return              // Возврат из метода
-}
+	q.rw.Lock()
+	defer q.rw.Unlock()
 
-// GetMsg Метод получения сообщения из очереди по ключу
-func (q *queue) GetMsg(key int64) queueMsg {
-	q.rw.Lock()         // Блокировка для чтения
-	defer q.rw.Unlock() // Обеспечение разблокировки после завершения операции
-	return q.Map[key]   // Возврат сообщения из карты по ключу
-}
-
-// SetMsgId Метод установки идентификатора сообщения для заданного ключа
-func (q *queue) SetMsgId(key, msgid int64) {
-	q.rw.Lock()         // Блокировка для записи
-	defer q.rw.Unlock() // Обеспечение разблокировки после завершения операции
-
-	// Проверяем наличие ключа и устанавливаем его MsgId
 	if msg, ok := q.Map[key]; ok {
-		msg.MsgId = msgid // Устанавливаем идентификатор сообщения
-		q.Map[key] = msg  // Обновляем сообщение в карте
+		close(msg.Chan) // Закрываем канал, чтобы горутины не зависли
+		delete(q.Map, key)
 	}
 }
 
-// Инициализация очередей
-func initQ() {
-	qu.Map = make(map[int64]queueMsg) // Инициализация карты для хранения сообщений в очереди
+// GetMsg — возвращает сообщение по ключу
+func (q *queue) GetMsg(key int64) (queueMsg, bool) {
+	q.rw.RLock()
+	defer q.rw.RUnlock()
+	msg, ok := q.Map[key]
+	return msg, ok
+}
+
+// SetMsgId — устанавливает идентификатор сообщения
+func (q *queue) SetMsgId(key, msgid int64) {
+	q.rw.Lock()
+	defer q.rw.Unlock()
+
+	if msg, ok := q.Map[key]; ok {
+		msg.MsgId = msgid
+		q.Map[key] = msg
+	}
 }
