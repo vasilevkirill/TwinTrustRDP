@@ -14,78 +14,79 @@ var bot *tgbotapi.BotAPI
 
 // telegramRun функция запуска бота Telegram.
 func telegramRun() error {
-	// Создаем нового бота с помощью токена из конфига.
+	log.Println("Telegram - Инициализация бота...")
 	bt, err := tgbotapi.NewBotAPI(configGlobalS.Telegram.Token)
 	if err != nil {
 		return errorGetFromIdAddSuffix(600, err.Error())
 	}
-
-	// Включаем режим отладки, если указано в конфиге.
 	bt.Debug = configGlobalS.Telegram.Debug
-	// Формируем адрес веб хука для бота.
+	log.Printf("Telegram - Запущен бот в режиме отладки: %v", bt.Debug)
+
 	webHookAddress := fmt.Sprintf("https://%s:%d", configGlobalS.Telegram.HookDomain, configGlobalS.Telegram.HookPort)
 	configGlobalS.Telegram.WebHookAddress = webHookAddress
-	// Устанавливаем веб хук для бота с помощью SSL-сертификата.
+	log.Printf("Telegram - Установка веб хуков по адресу: %s", webHookAddress)
+
 	wh, err := tgbotapi.NewWebhookWithCert(webHookAddress, tgbotapi.FilePath(configGlobalS.Telegram.HookCertPub))
 	if err != nil {
 		return errorGetFromIdAddSuffix(601, err.Error())
 	}
-	// Устанавливаем веб хук для бота.
+
 	_, err = bt.Request(wh)
 	if err != nil {
 		return errorGetFromIdAddSuffix(602, err.Error())
 	}
-
 	bot = bt
-	// Запускаем функцию обработки обновлений от бота в отдельной горутине.
-	go updatesWord()
 
+	log.Println("Telegram - Запуск функции обработки обновлений в отдельной горутине...")
+	go updatesWord()
 	return nil
 }
 
 // updatesWord функция обработки обновлений от бота.
 func updatesWord() {
-	// Получаем обновления от бота.
 	updates := bot.ListenForWebhook("/")
-	// Запускаем HTTP сервер.
+	log.Println("Telegram - Запуск HTTP сервера для обработки вебхуков...")
 	go runHttpServer()
-	// Обрабатываем каждое обновление.
+
+	log.Println("Telegram - Обработка обновлений...")
 	for update := range updates {
-		err := checkOldMessage(update.Message)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		// Проверяем, является ли обновление callback query.
-		if checkCallbackQuery(update) {
-			continue
-		}
-		// Игнорируем обновления, не являющиеся сообщениями.
-		if update.Message == nil {
-			continue
-		}
-		// Игнорируем не командные сообщения.
-		if !update.Message.IsCommand() {
-			continue
-		}
-		// Игнорируем сообщения от других ботов.
-		if update.Message.From.IsBot {
-			continue
-		}
-		// Обрабатываем команды.
-		switch update.Message.Command() {
-		case "start":
-			cmdStart(update)
-		case "force":
-			cmdForce(update)
-		case "clear":
-			cmdClear(update)
-		case "killVasya":
-			cmdKillVasya(update)
-		case "help":
-			cmdHelp(update)
-		default:
-			debug(fmt.Sprintf("Получена комманда %s", update.Message.Command()))
+		if update.Message != nil {
+			log.Printf("Telegram - Обновление от пользователя: %d, текст: %s", update.Message.From.ID, update.Message.Text)
+			err := checkOldMessage(update.Message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			if checkCallbackQuery(update) {
+				continue
+			}
+
+			if !update.Message.IsCommand() {
+				log.Printf("Telegram - Обновление от пользователя %d не является командой: %s", update.Message.From.ID, update.Message.Text)
+				continue
+			}
+
+			if update.Message.From.IsBot {
+				log.Printf("Telegram - Игнорирование сообщения от другого бота: %s", update.Message.Text)
+				continue
+			}
+
+			// Обрабатываем команды
+			switch update.Message.Command() {
+			case "start":
+				cmdStart(update)
+			case "force":
+				cmdForce(update)
+			case "clear":
+				cmdClear(update)
+			case "killVasya":
+				cmdKillVasya(update)
+			case "help":
+				cmdHelp(update)
+			default:
+				debug(fmt.Sprintf("Получена команда %s", update.Message.Command()))
+			}
 		}
 	}
 }
@@ -97,26 +98,25 @@ func checkCallbackQuery(update tgbotapi.Update) bool {
 	if CallbackQuery != nil {
 		data = CallbackQuery.Data
 	}
-
 	if data == "" {
 		return false
 	}
 	msg := CallbackQuery.Message
-
-	debug(fmt.Sprintf("Пользователь %d нажал %s", msg.Chat.ID, data))
+	log.Printf("Telegram - Пользователь %d нажал кнопку %s", msg.Chat.ID, data)
 	err := removeMsg(msg)
 	if err != nil {
-		log.Println(err)
+		log.Println("Ошибки при удалении сообщения:", err)
 		return true
 	}
 	m := qu.GetMsg(msg.Chat.ID)
 	if data == "yes" {
 		m.Chan <- 1
+		log.Printf("Telegram - Пользователь %d ответил 'да'", msg.Chat.ID)
 		return true
 	}
-
 	if data == "no" {
 		m.Chan <- 0
+		log.Printf("Telegram - Пользователь %d ответил 'нет'", msg.Chat.ID)
 		return true
 	}
 	return false
@@ -124,7 +124,7 @@ func checkCallbackQuery(update tgbotapi.Update) bool {
 
 // sendQuery отправляет запрос пользователю Telegram.
 func sendQuery(user ldapUser, timeout int) error {
-	// Формируем сообщение с inline клавиатурой.
+	log.Printf("Telegram - Отправка запроса пользователю %d с таймаутом %d секунд", user.TelegramId, timeout)
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Да", "yes"),
@@ -136,9 +136,11 @@ func sendQuery(user ldapUser, timeout int) error {
 	msg.ReplyMarkup = inlineKeyboard
 	msgSend, err := bot.Send(msg)
 	if err != nil {
+		log.Printf("Telegram - Ошибка при отправке сообщения: %s", err.Error())
 		return err
 	}
 	qu.SetMsgId(msgSend.Chat.ID, int64(msgSend.MessageID))
+	log.Printf("Telegram - Сообщение успешно отправлено пользователю %d, ID сообщения: %d", user.TelegramId, msgSend.MessageID)
 	return nil
 }
 
@@ -147,8 +149,10 @@ func removeMsg(msg *tgbotapi.Message) error {
 	deleteMsgConfig := tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID)
 	_, err := bot.Request(deleteMsgConfig)
 	if err != nil {
+		log.Printf("Telegram - Ошибка при удалении сообщения: %s", err.Error())
 		return errorGetFromIdAddSuffix(604, err.Error())
 	}
+	log.Printf("Telegram - Сообщение удалено: %d", msg.MessageID)
 	return nil
 }
 
@@ -157,14 +161,18 @@ func removeMsgByChaiIDMsgIDForce(chatId, msgId int64) error {
 	deleteMsgConfig := tgbotapi.NewDeleteMessage(chatId, int(msgId))
 	_, err := bot.Request(deleteMsgConfig)
 	if err != nil {
+		log.Printf("Telegram - Ошибка при удалении сообщения с ID %d у чата %d: %s", msgId, chatId, err.Error())
 		return errorGetFromIdAddSuffix(604, err.Error())
 	}
+	log.Printf("Telegram - Сообщение с ID %d успешно удалено у чата %d", msgId, chatId)
 	return nil
 }
 
 // runHttpServer запускает HTTP сервер для обработки вебхука.
 func runHttpServer() {
 	strConnect := fmt.Sprintf("%s:%d", configGlobalS.Telegram.PoolAddress, configGlobalS.Telegram.PoolPort)
+	log.Printf("Telegram - Запуск HTTP сервера на %s", strConnect)
+
 	err := http.ListenAndServeTLS(strConnect, configGlobalS.Telegram.HookCertPub, configGlobalS.Telegram.HookCertKey, nil)
 	if err != nil {
 		errN := errorGetFromIdAddSuffix(605, err.Error(), strConnect)
@@ -184,15 +192,15 @@ func cmdKillVasya(update tgbotapi.Update) {
 	debug("Система получила команду /killVasya")
 	auth, _ := chatAuth(update)
 	if !auth {
+		log.Println("Telegram - Не удалось аутентифицировать пользователя для команды /killVasya")
 		return
 	}
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-	msg.Text = "Ща Усё всё сделаем"
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Ща Усё всё сделаем")
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Telegram - Ошибка при отправке сообщения пользователю: %s", err.Error())
 	}
-	debug("Килимся")
+	log.Println("Telegram - Завершение программы по команде /killVasya")
 	os.Exit(-222)
 }
 
@@ -201,15 +209,14 @@ func cmdForce(update tgbotapi.Update) {
 	debug("Система получила команду /force")
 	auth, user := chatAuth(update)
 	if !auth {
+		log.Println("Telegram - Не удалось аутентифицировать пользователя для команды /force")
 		return
 	}
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-
 	Mpw.add(user.TelegramId)
-	msg.Text = "Принято, можете авторизоваться"
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Принято, можете авторизоваться")
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Telegram - Ошибка при отправке сообщения пользователю: %s", err.Error())
 	}
 }
 
@@ -218,16 +225,15 @@ func cmdClear(update tgbotapi.Update) {
 	debug("Система получила команду /clear")
 	auth, user := chatAuth(update)
 	if !auth {
+		log.Println("Telegram - Не удалось аутентифицировать пользователя для команды /clear")
 		return
 	}
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-
 	Mpw.remove(user.TelegramId)
 	qu.RemoveKey(user.TelegramId)
-	msg.Text = "Принято, всё почистили"
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Принято, всё почистили")
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Telegram - Ошибка при отправке сообщения пользователю: %s", err.Error())
 	}
 }
 
@@ -236,15 +242,13 @@ func cmdHelp(update tgbotapi.Update) {
 	debug("Система получила команду /help")
 	auth, _ := chatAuth(update)
 	if !auth {
+		log.Println("Telegram - Не удалось аутентифицировать пользователя для команды /help")
 		return
 	}
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-
-	msg.Text = "/force - прозрачная авторизация"
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "/force - прозрачная авторизация")
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println(err)
-		return
+		log.Printf("Telegram - Ошибка при отправке сообщения пользователю: %s", err.Error())
 	}
 }
 
@@ -253,15 +257,13 @@ func cmdStart(update tgbotapi.Update) {
 	debug("Система получила команду /start")
 	auth, _ := chatAuth(update)
 	if !auth {
+		log.Println("Telegram - Не удалось аутентифицировать пользователя для команды /start")
 		return
 	}
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-
-	msg.Text = "Здравствуйте, всё подготовлено, мы уже знакомы."
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Здравствуйте, всё подготовлено, мы уже знакомы.")
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println(err)
-		return
+		log.Printf("Telegram - Ошибка при отправке сообщения пользователю: %s", err.Error())
 	}
 }
 
@@ -269,12 +271,14 @@ func cmdStart(update tgbotapi.Update) {
 func chatAuth(update tgbotapi.Update) (bool, ldapUser) {
 	msgWait := tgbotapi.NewMessage(update.Message.Chat.ID, "Ждите...")
 	msgW, err := bot.Send(msgWait)
-
 	user := ldapUser{}
 	user.TelegramId = update.Message.From.ID
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+
+	log.Printf("Telegram - Аутентификация пользователя с ID %d", user.TelegramId)
 	err = user.PullViaTelegramId()
 	if err != nil {
+		log.Printf("Telegram - Ошибка аутентификации пользователя %d: %s", user.TelegramId, err.Error())
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		switch {
 		case errors.Is(err, ldapErrUserNotFound):
 			msg.Text = fmt.Sprintf("Привет, мы не знакомы\n отправь с службу поддержки твой ID %d ", user.TelegramId)
@@ -285,23 +289,23 @@ func chatAuth(update tgbotapi.Update) (bool, ldapUser) {
 		}
 		err = removeMsg(&msgW)
 		if err != nil {
-			log.Println(err)
-			return false, ldapUser{}
+			log.Println("Telegram - Ошибка при удалении сообщения ожидания:", err)
 		}
 		_, err = bot.Send(msg)
 		if err != nil {
-			log.Println(err)
-			return false, ldapUser{}
+			log.Println("Telegram - Ошибка при отправке сообщения пользователю после ошибочной аутентификации:", err)
 		}
 		return false, ldapUser{}
 	}
 	err = removeMsg(&msgW)
 	if err != nil {
-		log.Println(err)
+		log.Println("Telegram - Ошибка при удалении сообщения ожидания:", err)
 	}
+	log.Printf("Telegram - Пользователь %d успешно аутентифицирован", user.TelegramId)
 	return true, user
 }
 
+// checkOldMessage проверяет время старых сообщений.
 func checkOldMessage(msg *tgbotapi.Message) error {
 	if msg == nil {
 		return nil
@@ -314,6 +318,7 @@ func checkOldMessage(msg *tgbotapi.Message) error {
 		}
 		duration := time.Since(msgTime)
 		seconds := int(duration.Seconds())
+		log.Printf("Telegram - Сообщение от пользователя %d старше 3 минут и удалено. Продолжительность: %d секунд", msg.From.ID, seconds)
 		return errorGetFromIdAddSuffix(607, fmt.Sprintf("%d seconds", seconds))
 	}
 	return nil
